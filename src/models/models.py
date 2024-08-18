@@ -31,7 +31,7 @@ class User(Base):
     confirmed = Column(Boolean, default=False, nullable=False)
     is_active = Column(Boolean, default=False)
 
-    vehicles = relationship("Vehicle", back_populates="user")  # Зворотний зв'язок з Vehicle
+    vehicles = relationship("Vehicle", back_populates="user")  
 
     @hybrid_property
     def fullname(self):
@@ -54,7 +54,7 @@ class Vehicle(Base):
     user_id = mapped_column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
     is_blacklisted = mapped_column(Boolean, default=False)
     
-    user = relationship("User", back_populates="vehicles")  # Зворотний зв'язок з User
+    user = relationship("User", back_populates="vehicles")
     parking_records = relationship("ParkingRecord", back_populates="vehicle")
 
 
