@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "parking-app"
+version = "0.1.0"
+description = ""
+authors = ["Serghii777 <142201494+Serghii777@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.112.1"
+uvicorn = "^0.30.6"
+sqlalchemy = "^2.0.32"
+psycopg2-binary = "^2.9.9"
+pydantic = "^2.8.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

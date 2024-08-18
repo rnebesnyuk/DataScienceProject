@@ -1,0 +1,42 @@
+version: '3.9'
+
+services:
+  redis_server:
+    container_name: redis_web
+    image: redis:latest
+    environment:
+      - REDIS_PORT=${REDIS_PORT}
+    ports:
+      - ${REDIS_PORT}:${REDIS_PORT}
+
+  postgres:
+    container_name: postgres_db
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - ${DB_PORT}:5432
+
+  app:
+    container_name: my_app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DB_URL=${DB_URL}
+      - REDIS_HOST=redis_server
+      - REDIS_PORT=${REDIS_PORT}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis_server
+
+volumes:
+  postgres_data:
