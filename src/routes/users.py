@@ -1,16 +1,13 @@
-from urllib import request
-
-from fastapi import APIRouter, Depends, status, UploadFile, File, Request, BackgroundTasks, HTTPException, Query
+import uuid
+from fastapi import APIRouter, Depends, status, HTTPException, Request, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.templating import Jinja2Templates
 from starlette.responses import HTMLResponse
-
 from src.database.db import get_db
 from src.models.models import User
-from src.repository import users as repository_users
+from src.repository.users import UserRepository, VehicleRepository, ParkingRecordRepository
 from src.services.auth import auth_service
-from src.conf.config import settings
-from src.schemas.user import UserDbSchema, RequestEmail, RequestNewPassword
+from src.schemas.user import UserDbSchema, RequestEmail
 from src.services.email import send_email_reset_password
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -27,7 +24,7 @@ async def forgot_password(background_tasks: BackgroundTasks,
                           request: Request,
                           body: RequestEmail = Depends(),
                           db: AsyncSession = Depends(get_db)) -> dict:
-    user = await repository_users.get_user_by_email(body.email, db)
+    user = await UserRepository(db).get_user_by_email(body.email)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     if user:
@@ -36,7 +33,7 @@ async def forgot_password(background_tasks: BackgroundTasks,
 
 
 @router.post("/reset_password/{token}")
-async def reset_password(token:  str,
+async def reset_password(token: str,
                          request_: Request,
                          db: AsyncSession = Depends(get_db)) -> dict:
     form_data = await request_.form()
@@ -45,15 +42,31 @@ async def reset_password(token:  str,
     if not email:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
 
-    user = await repository_users.get_user_by_email(email, db)
+    user = await UserRepository(db).get_user_by_email(email)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     new_password = await auth_service.get_password_hash(new_password)
-    await repository_users.update_password(user, new_password, db)
+    await UserRepository(db).update_password(user, new_password, db)
     return {"message": "Password reset successfully"}
 
 
 @router.get("/reset_password/{token}", response_class=HTMLResponse)
 async def get_reset_password_page(token: str, request_: Request):
     return templates.TemplateResponse("reset_password.html", {"request": request_, "token": token})
+
+
+@router.get("/vehicle/{license_plate}/check", response_model=dict)
+async def check_vehicle_registration(license_plate: str, db: AsyncSession = Depends(get_db)):
+    vehicle_repo = VehicleRepository(db)
+    is_registered = await vehicle_repo.is_vehicle_registered(license_plate)
+    return {"is_registered": is_registered}
+
+
+@router.get("/vehicle/{vehicle_id}/parking_duration", response_model=dict)
+async def get_parking_duration(vehicle_id: str, db: AsyncSession = Depends(get_db)):
+    parking_repo = ParkingRecordRepository(db)
+    duration = await parking_repo.get_parking_duration(uuid.UUID(vehicle_id))
+    if duration is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parking record not found or still in progress")
+    return {"duration_minutes": duration}
