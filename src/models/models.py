@@ -78,5 +78,17 @@ class ParkingRate(Base):
     rate_per_hour = mapped_column(Integer, nullable=False)
     max_daily_rate = mapped_column(Integer, nullable=True)
     currency = mapped_column(String(10), default="USD", nullable=False)
+    total_spaces = mapped_column(Integer, nullable=False, default=100)  
+    available_spaces = mapped_column(Integer, nullable=False, default=100)  
+    created_at = mapped_column(DateTime, default=func.now())
+    updated_at = mapped_column(DateTime, default=func.now(), onupdate=func.now())
+
+
+class ParkingLot(Base):
+    __tablename__ = "parking_lot"
+    
+    id = mapped_column(Integer, primary_key=True, index=True)
+    total_spaces = mapped_column(Integer, nullable=False, default=100)
+    available_spaces = mapped_column(Integer, nullable=False, default=100)
     created_at = mapped_column(DateTime, default=func.now())
     updated_at = mapped_column(DateTime, default=func.now(), onupdate=func.now())
