@@ -1,1 +1,9 @@
 .env
+__pycache__
+.idea/
+src/models/__pycache__
+src/services/__pycache__
+src/conf/__pycache__
+src/database/__pycache__
+src/repository/__pycache__
+src/routes/__pycache__
