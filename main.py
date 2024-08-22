@@ -11,8 +11,7 @@ from starlette.responses import JSONResponse
 
 from src.database.db import get_db
 from src.routes import auth, users, admin
-from src.routes.auth import blacklisted_tokens, router as auth_router
-from src.routes.users import router as users_router
+from src.routes.auth import blacklisted_tokens
 from src.utils.utils import periodic_clean_blacklist
 from fastapi.templating import Jinja2Templates
 
@@ -30,8 +29,8 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(auth_router, prefix="/api/auth")
-app.include_router(users_router, prefix="/api/users")
+app.include_router(auth.router, prefix="/api/auth")
+app.include_router(users.router, prefix="/api/users")
 app.include_router(admin.router, prefix="/api")
 
 @app.get("/")

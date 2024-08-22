@@ -40,7 +40,6 @@ class UserCreateSchema(BaseModel):
     name: str
     password: str
     phone: Optional[str] = None
-    car_number: Optional[str] = None
     password_confirmation: str
 
     class Config:
