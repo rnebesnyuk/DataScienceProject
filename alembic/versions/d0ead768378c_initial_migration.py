@@ -1,8 +1,8 @@
-"""Initial tables
+"""Initial migration
 
-Revision ID: e58879a20ee0
+Revision ID: d0ead768378c
 Revises: 
-Create Date: 2024-08-20 23:49:53.910778
+Create Date: 2024-08-22 01:19:16.928655
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'e58879a20ee0'
+revision: str = 'd0ead768378c'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -29,22 +29,11 @@ def upgrade() -> None:
     op.create_index(op.f('ix_black_list_email'), 'black_list', ['email'], unique=True)
     op.create_index(op.f('ix_black_list_id'), 'black_list', ['id'], unique=False)
     op.create_index(op.f('ix_black_list_token'), 'black_list', ['token'], unique=True)
-    op.create_table('parking_lot',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('total_spaces', sa.Integer(), nullable=False),
-    sa.Column('available_spaces', sa.Integer(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_parking_lot_id'), 'parking_lot', ['id'], unique=False)
     op.create_table('parking_rates',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('rate_per_hour', sa.Integer(), nullable=False),
     sa.Column('max_daily_rate', sa.Integer(), nullable=True),
     sa.Column('currency', sa.String(length=10), nullable=False),
-    sa.Column('total_spaces', sa.Integer(), nullable=False),
-    sa.Column('available_spaces', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
@@ -52,30 +41,27 @@ def upgrade() -> None:
     op.create_index(op.f('ix_parking_rates_id'), 'parking_rates', ['id'], unique=False)
     op.create_table('users',
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('first_name', sa.String(length=50), nullable=True),
-    sa.Column('last_name', sa.String(length=50), nullable=True),
-    sa.Column('email', sa.String(length=320), nullable=False),
-    sa.Column('password', sa.String(length=1024), nullable=False),
-    sa.Column('role', sa.Enum('admin', 'moderator', 'user', name='role'), nullable=False),
-    sa.Column('refresh_token', sa.String(length=255), nullable=True),
+    sa.Column('email', sa.String(), nullable=False),
+    sa.Column('first_name', sa.String(), nullable=False),
+    sa.Column('last_name', sa.String(), nullable=False),
+    sa.Column('password', sa.String(), nullable=False),
+    sa.Column('phone', sa.String(), nullable=True),
+    sa.Column('car_number', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.Column('confirmed', sa.Boolean(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('email')
     )
-    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
     op.create_table('vehicles',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('license_plate', sa.String(length=20), nullable=False),
-    sa.Column('brand_model', sa.String(length=50), nullable=True),
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('is_blacklisted', sa.Boolean(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_vehicles_brand_model'), 'vehicles', ['brand_model'], unique=False)
     op.create_index(op.f('ix_vehicles_id'), 'vehicles', ['id'], unique=False)
     op.create_index(op.f('ix_vehicles_license_plate'), 'vehicles', ['license_plate'], unique=True)
     op.create_table('parking_records',
@@ -98,15 +84,11 @@ def downgrade() -> None:
     op.drop_table('parking_records')
     op.drop_index(op.f('ix_vehicles_license_plate'), table_name='vehicles')
     op.drop_index(op.f('ix_vehicles_id'), table_name='vehicles')
-    op.drop_index(op.f('ix_vehicles_brand_model'), table_name='vehicles')
     op.drop_table('vehicles')
     op.drop_index(op.f('ix_users_id'), table_name='users')
-    op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
     op.drop_index(op.f('ix_parking_rates_id'), table_name='parking_rates')
     op.drop_table('parking_rates')
-    op.drop_index(op.f('ix_parking_lot_id'), table_name='parking_lot')
-    op.drop_table('parking_lot')
     op.drop_index(op.f('ix_black_list_token'), table_name='black_list')
     op.drop_index(op.f('ix_black_list_id'), table_name='black_list')
     op.drop_index(op.f('ix_black_list_email'), table_name='black_list')
