@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
 from src.database.db import get_db
-from src.routes import auth, users, admin
+from src.routes import auth, users, admin, image
 from src.routes.auth import blacklisted_tokens
 from src.utils.utils import periodic_clean_blacklist
 
@@ -55,6 +55,7 @@ async def startup():
 app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
+app.include_router(image.router, prefix="/api")
 
 
 @app.get("/")

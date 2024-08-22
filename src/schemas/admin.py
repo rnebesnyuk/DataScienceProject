@@ -24,11 +24,11 @@ class ParkingRateCreate(BaseModel):
     currency: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ParkingLotUpdate(BaseModel):
     total_spaces: int
     available_spaces: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
