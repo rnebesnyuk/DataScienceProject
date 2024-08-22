@@ -16,3 +16,19 @@ class ImageRequest(BaseModel):
 class UserRoleUpdate(BaseModel):
     user_id: uuid.UUID
     role: Role
+
+
+class ParkingRateCreate(BaseModel):
+    rate_per_hour: int
+    max_daily_rate: int
+    currency: str
+
+    class Config:
+        from_attributes = True
+
+class ParkingLotUpdate(BaseModel):
+    total_spaces: int
+    available_spaces: int
+
+    class Config:
+        from_attributes = True
