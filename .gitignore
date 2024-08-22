@@ -7,3 +7,4 @@ src/conf/__pycache__
 src/database/__pycache__
 src/repository/__pycache__
 src/routes/__pycache__
+src/schemas/__pycache__
