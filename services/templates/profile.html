@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Profile</title>
+</head>
+<body>
+    <h1>User Profile</h1>
+    <p>Email: {{ user.email }}</p>
+    <p>Name: {{ user.first_name }} {{ user.last_name }}</p>
+    {% if user.phone %}
+        <p>Phone: {{ user.phone }}</p>
+    {% endif %}
+    {% if user.car_number %}
+        <p>Car Number: {{ user.car_number }}</p>
+    {% endif %}
+</body>
+</html>

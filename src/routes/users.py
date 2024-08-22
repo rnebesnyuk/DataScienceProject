@@ -28,7 +28,7 @@ async def forgot_password(background_tasks: BackgroundTasks,
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     if user:
-        background_tasks.add_task(send_email_reset_password, user.email, user.fullname, str(request.base_url))
+        background_tasks.add_task(send_email_reset_password, user.email, user.name, str(request.base_url))
     return {"message": "Check your email for confirmation."}
 
 

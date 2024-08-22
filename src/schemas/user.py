@@ -2,15 +2,14 @@ import string
 import uuid
 from datetime import datetime
 from typing import Optional
-
+from uuid import UUID
 from pydantic import BaseModel, Field, EmailStr, ConfigDict, field_validator, model_validator, root_validator
 from pydantic.v1 import validator
 
 
 class UserReadSchema(BaseModel):
     id: uuid.UUID
-    first_name: str
-    last_name: str
+    name: str
     email: EmailStr
     model_config = ConfigDict(from_attributes=True)
 
@@ -28,19 +27,28 @@ class UserDbSchema(UserReadSchema):
 class UserResponseSchema(BaseModel):
     user: UserDbSchema
     detail: str = "User successfully created."
-
+    
+class UserProfileSchema(BaseModel):
+    id: UUID
+    email: EmailStr
+    name: str
+    phone: Optional[str]
+    car_number: Optional[str]
 
 class UserCreateSchema(BaseModel):
-    first_name: str = Field(min_length=2, max_length=50)
-    last_name: str = Field(min_length=2, max_length=50)
     email: EmailStr
-    password: str = Field(..., min_length=8, max_length=12)
-    password_confirmation: str = Field(..., min_length=8, max_length=12)
+    name: str
+    password: str
+    phone: Optional[str] = None
+    password_confirmation: str
+
+    class Config:
+        orm_mode = True
+
 
 
 class UserUpdateSchema(BaseModel):
-    first_name: Optional[str] = Field(min_length=2, max_length=50)
-    last_name: Optional[str] = Field(min_length=2, max_length=50)
+    name: Optional[str] = Field(min_length=2, max_length=50)
     email: Optional[EmailStr]
 
 
@@ -64,3 +72,4 @@ class LogoutResponseSchema(BaseModel):
 
 class RequestNewPassword(BaseModel):
     new_password: str = Field(min_length=8, max_length=12)
+    
