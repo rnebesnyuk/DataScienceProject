@@ -1,3 +1,5 @@
+from datetime import datetime
+from typing import Optional
 import uuid
 from pydantic import BaseModel, EmailStr
 
@@ -32,3 +34,37 @@ class ParkingLotUpdate(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ParkingRateUpdate(BaseModel):
+    total_spaces: int
+    available_spaces: int
+    occupied_spaces: Optional[int] = None  
+
+    class Config:
+        orm_mode = True
+
+
+class ParkingRecordSchema(BaseModel):
+    id: str
+    vehicle_id: str
+    entry_time: datetime
+    exit_time: Optional[datetime]
+    duration: Optional[int]
+    cost: Optional[int]
+
+    
+class VehicleCheckSchema(BaseModel):
+    license_plate: str
+
+
+class ParkingRecordSchema(BaseModel):
+    id: uuid.UUID
+    vehicle_id: uuid.UUID
+    entry_time: datetime
+    exit_time: Optional[datetime] = None
+    duration: Optional[int] = None
+    cost: Optional[int] = None
+
+    class Config:
+        orm_mode = True

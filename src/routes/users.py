@@ -7,7 +7,7 @@ from src.database.db import get_db
 from src.models.models import User
 from src.repository.users import UserRepository, VehicleRepository, ParkingRecordRepository
 from src.services.auth import auth_service
-from src.schemas.user import UserDbSchema, RequestEmail
+from src.schemas.user import ParkingHistorySchema, UserDbSchema, RequestEmail
 from src.services.email import send_email_reset_password
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -70,3 +70,18 @@ async def get_parking_duration(vehicle_id: str, db: AsyncSession = Depends(get_d
     if duration is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parking record not found or still in progress")
     return {"duration_minutes": duration}
+
+
+@router.get("/{license_plate}/history_car", response_model=list[ParkingHistorySchema])
+async def get_parking_history(license_plate: str, db: AsyncSession = Depends(get_db)):
+    vehicle_repo = VehicleRepository(db)
+    parking_repo = ParkingRecordRepository(db)
+    vehicle = await vehicle_repo.get_vehicle_by_license_plate(license_plate)
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    parking_records = await parking_repo.get_parking_history(license_plate)
+    history_with_plate = [
+        {**record, "license_plate": license_plate} for record in parking_records
+    ]
+    
+    return history_with_plate

@@ -73,3 +73,14 @@ class LogoutResponseSchema(BaseModel):
 class RequestNewPassword(BaseModel):
     new_password: str = Field(min_length=8, max_length=12)
     
+
+
+class ParkingHistorySchema(BaseModel):
+    license_plate: str  
+    entry_time: datetime
+    exit_time: Optional[datetime]
+    duration_minutes: Optional[int]  
+    cost: Optional[int]  
+
+    class Config:
+        orm_mode = True

@@ -4,9 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from src.repository import admin as repository_admin
-from src.schemas.admin import ParkingLotUpdate, ParkingRateCreate, UserRoleUpdate, UserStatusUpdate
+from src.schemas.admin import ParkingLotUpdate, ParkingRateCreate, ParkingRateUpdate, ParkingRecordSchema, UserRoleUpdate, UserStatusUpdate, VehicleCheckSchema, VehicleCreateSchema, VehicleReadSchema
 from src.schemas.user import UserReadSchema
-from src.models.models import User, Role
+from src.models.models import User, Role, Vehicle
 from src.services.role import RoleAccess
 from src.services.auth import auth_service
 from src.database.db import get_db
@@ -80,3 +80,55 @@ async def update_parking_spaces(
         db=db
     )
     return parking_lot
+
+
+@router.put("/parking-info", response_model=ParkingRateUpdate, dependencies=[Depends(role_admin)])
+async def update_parking_info(
+    lot_data: ParkingRateUpdate,  
+    db: AsyncSession = Depends(get_db)
+):
+    parking_info = await repository_admin.update_parking_info(
+        total_spaces=lot_data.total_spaces,
+        available_spaces=lot_data.available_spaces,
+        rate_per_hour=lot_data.rate_per_hour,  
+        max_daily_rate=lot_data.max_daily_rate,
+        currency=lot_data.currency,
+        db=db
+    )
+    return parking_info
+
+@router.post("/add_car_to_parking", response_model=ParkingRecordSchema, dependencies=[Depends(role_admin)])
+async def add_to_parking(vehicle_check: VehicleCheckSchema, db: AsyncSession = Depends(get_db)):
+    vehicle_repo = repository_admin.ParkingRecordRepository(db)
+    
+    try:
+        parking_record = await vehicle_repo.add_vehicle_to_parking(vehicle_check)
+        return parking_record
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    
+
+
+@router.put("/end-parking", response_model=ParkingRecordSchema, dependencies=[Depends(role_admin)])
+async def end_parking(vehicle_check: VehicleCheckSchema, db: AsyncSession = Depends(get_db)):
+    parking_repo = repository_admin.ParkingRecordRepository(db)
+    
+    try:
+        parking_record = await parking_repo.end_parking_by_license_plate(vehicle_check.license_plate)
+        return parking_record
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    
+
+
+@router.post("/add_to_blacklist", dependencies=[Depends(role_admin)])
+async def add_to_blacklist(
+    license_plate: str,
+    db: AsyncSession = Depends(get_db)
+):
+    blacklist_repo = repository_admin.BlackListRepository(db)
+    if await blacklist_repo.is_blacklisted(license_plate):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Vehicle is already blacklisted.")
+    
+    blacklisted_entry = await blacklist_repo.add_to_blacklist(license_plate)
+    return blacklisted_entry

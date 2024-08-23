@@ -85,3 +85,10 @@ class ParkingLot(Base):
     available_spaces = mapped_column(Integer, nullable=False, default=100)
     created_at = mapped_column(DateTime, default=func.now())
     updated_at = mapped_column(DateTime, default=func.now(), onupdate=func.now())
+
+
+class BlackListCar(Base):
+    __tablename__ = 'black_list'
+
+    id = Column(Integer, primary_key=True, index=True)
+    license_plate = Column(String(20), unique=True, index=True, nullable=False)
