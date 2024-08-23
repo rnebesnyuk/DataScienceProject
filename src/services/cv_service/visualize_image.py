@@ -1,7 +1,5 @@
 import ast
 import csv
-from io import BytesIO
-from skimage import io
 import cv2
 import numpy as np
 import pandas as pd

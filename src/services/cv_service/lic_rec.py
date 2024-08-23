@@ -8,27 +8,17 @@ from src.services.cv_service.util import get_car, read_license_plate
 
 results = {}
 
-mot_tracker = Sort()
-
 # load models
 coco_model = YOLO('yolov8n.pt') #for cars detection
 license_plate_detector = YOLO('license_plate_detector.pt') #for license plates detection
 
-# load videostream/file
-#vid = cv2.VideoCapture('./mazda.mp4')
-# frame_count = int(vid.get(cv2.CAP_PROP_FRAME_COUNT))
-# print(f"Total frames in video: {frame_count}")
-
 vehicles = [2, 3, 5, 7]
 
-processed_frames_count = 0
-reinit_threshold=3
-# Function to process frame (for both video and image)
-def process_frame(frame, frame_nmr, results, vehicles, mot_tracker):
-    global processed_frames_count
-    global reinit_threshold
-    results[frame_nmr] = {}
 
+# Function to process frame (for both video and image)
+def process_frame(frame, frame_nmr, results, vehicles):
+
+    results[frame_nmr] = {}
     # Detect vehicles
     detections = coco_model(frame)[0]
     detections_ = []
@@ -37,8 +27,6 @@ def process_frame(frame, frame_nmr, results, vehicles, mot_tracker):
         if int(class_id) in vehicles:  # Ensure vehicles is a list of class IDs for vehicles
             detections_.append([x1, y1, x2, y2, score])
 
-    # Track vehicles
-    track_ids = mot_tracker.update(np.asarray(detections_))
 
     # Detect license plates
     license_plates = license_plate_detector(frame)[0]
@@ -46,7 +34,7 @@ def process_frame(frame, frame_nmr, results, vehicles, mot_tracker):
         x1, y1, x2, y2, score, class_id = license_plate
 
         # Assign license plate to car
-        xcar1, ycar1, xcar2, ycar2, car_id = get_car(license_plate, track_ids)
+        xcar1, ycar1, xcar2, ycar2, car_id = get_car(license_plate, detections_)
 
         if car_id != -1:
             # Crop license plate
@@ -70,8 +58,8 @@ def process_frame(frame, frame_nmr, results, vehicles, mot_tracker):
             # Read license plate number
             license_plate_text, license_plate_text_score = read_license_plate(license_plate_crop___)
             print(license_plate_text)
-            cv2.imshow("Image", license_plate_crop_)
-            cv2.waitKey(0)
+            # cv2.imshow("Image", license_plate_crop_)
+            # cv2.waitKey(0)
 
             if license_plate_text is not None:
                 results[frame_nmr][car_id] = {
@@ -85,7 +73,7 @@ def process_frame(frame, frame_nmr, results, vehicles, mot_tracker):
                 }
 
 # Main function to handle video or image
-def process_video_or_image(input_source, vehicles, mot_tracker, s_type):
+def process_video_or_image(input_source, vehicles, s_type):
     results = {}
     frame_nmr = -1
     
@@ -97,7 +85,7 @@ def process_video_or_image(input_source, vehicles, mot_tracker, s_type):
             frame_nmr += 1
             ret, frame = vid.read()
             if ret:
-                process_frame(frame, 0, results, vehicles, mot_tracker)
+                process_frame(frame, 0, results, vehicles)
         vid.release()
 
     elif s_type=='pic':
@@ -106,15 +94,8 @@ def process_video_or_image(input_source, vehicles, mot_tracker, s_type):
         frame = cv2.imread(input_source)
         if frame is None:
             raise ValueError("Failed to read image.")
-        process_frame(frame, 0, results, vehicles, mot_tracker)
+        process_frame(frame, 0, results, vehicles)
     else:
         print("Could not read the file.")
 
     return results
-
-# Example usage
-# input_source = './hir.jpg'  # Path to video or image file
-# results = process_video_or_image(input_source, vehicles, mot_tracker)
-
-# write results
-# write_csv(results, './test.csv')

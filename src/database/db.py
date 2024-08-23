@@ -33,4 +33,4 @@ async def get_db():
         yield session
 
 
-sessionmanager = DatabaseSessionManager(settings.db_local_url)
+sessionmanager = DatabaseSessionManager(settings.db_url)

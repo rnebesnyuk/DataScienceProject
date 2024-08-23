@@ -80,3 +80,5 @@ async def update_parking_spaces(
         db=db
     )
     return parking_lot
+
+

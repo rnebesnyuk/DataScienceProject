@@ -10,7 +10,14 @@ from libgravatar import Gravatar
 
 # User Repository
 async def create_user(body: UserCreateSchema, db: AsyncSession = Depends(get_db)) -> User:
-    new_user = User(**body.model_dump())
+    avatar = None
+    try:
+        g = Gravatar(email=body.email)
+        avatar = g.get_image()
+    except Exception as err:
+        print(err)
+
+    new_user = User(**body.model_dump(), avatar=avatar)
 
     query = select(func.count(User.id))
     count = await db.execute(query)
