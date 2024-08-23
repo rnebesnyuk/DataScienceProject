@@ -88,7 +88,7 @@ class ParkingLot(Base):
 
 
 class BlackListCar(Base):
-    __tablename__ = 'black_list'
+    __tablename__ = 'black_listcar'
 
     id = Column(Integer, primary_key=True, index=True)
     license_plate = Column(String(20), unique=True, index=True, nullable=False)
