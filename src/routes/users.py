@@ -6,18 +6,19 @@ from typing import List
 
 from fastapi import APIRouter, Depends, status, HTTPException, Request, BackgroundTasks, UploadFile, File
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse,JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.responses import HTMLResponse,JSONResponse
 
 from src.database.db import get_db
 from src.models.models import User, Vehicle
-from src.repository.users import UserRepository, VehicleRepository, ParkingRecordRepository
-from src.schemas.user import UserDbSchema, RequestEmail, EntryResponseSchema
+from src.repository.users import UserRepository, ParkingRecordRepository
+from src.schemas.user import UserDbSchema, RequestEmail, ParkingEntryResponseSchema
 from src.services.auth import auth_service
 from src.services.email import send_email_reset_password
 from src.services.cv_service import initiate
+
 
 router = APIRouter(prefix="/users", tags=["users"])
 templates = Jinja2Templates(directory="src/services/templates")
@@ -30,21 +31,21 @@ async def read_users_me(current_user: User = Depends(auth_service.get_current_us
 
 @router.post("/forgot_password")
 async def forgot_password(background_tasks: BackgroundTasks,
-                          request: Request,
-                          body: RequestEmail = Depends(),
-                          db: AsyncSession = Depends(get_db)) -> dict:
+                        request: Request,
+                        body: RequestEmail = Depends(),
+                        db: AsyncSession = Depends(get_db)) -> dict:
     user = await UserRepository(db).get_user_by_email(body.email)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     if user:
-        background_tasks.add_task(send_email_reset_password, user.email, user.fullname, str(request.base_url))
+        background_tasks.add_task(send_email_reset_password, user.email, user.name, str(request.base_url))
     return {"message": "Check your email for confirmation."}
 
 
 @router.post("/reset_password/{token}")
 async def reset_password(token: str,
-                         request_: Request,
-                         db: AsyncSession = Depends(get_db)) -> dict:
+                        request_: Request,
+                        db: AsyncSession = Depends(get_db)) -> dict:
     form_data = await request_.form()
     new_password = form_data["new_password"]
     email = await auth_service.get_email_from_token(token)
@@ -65,25 +66,25 @@ async def get_reset_password_page(token: str, request_: Request):
     return templates.TemplateResponse("reset_password.html", {"request": request_, "token": token})
 
 
-@router.get("/vehicle/{license_plate}/check", response_model=dict)
-async def check_vehicle_registration(license_plate: str, db: AsyncSession = Depends(get_db)):
-    vehicle_repo = VehicleRepository(db)
-    is_registered = await vehicle_repo.is_vehicle_registered(license_plate)
-    return {"is_registered": is_registered}
+# @router.get("/vehicle/{license_plate}/check", response_model=dict)
+# async def check_vehicle_registration(license_plate: str, db: AsyncSession = Depends(get_db)):
+#     vehicle_repo = VehicleRepository(db)
+#     is_registered = await vehicle_repo.is_vehicle_registered(license_plate)
+#     return {"is_registered": is_registered}
 
 
-@router.get("/vehicle/{vehicle_id}/parking_duration", response_model=dict)
-async def get_parking_duration(vehicle_id: str, db: AsyncSession = Depends(get_db)):
+@router.get("/vehicle/{license_plate}/parking_duration", response_model=dict)
+async def get_parking_duration(license_plate: str, db: AsyncSession = Depends(get_db)):
     parking_repo = ParkingRecordRepository(db)
-    duration = await parking_repo.get_parking_duration(uuid.UUID(vehicle_id))
+    duration = await parking_repo.get_parking_duration(license_plate)
     if duration is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parking record not found or still in progress")
     return {"duration_minutes": duration}
 
 
-@router.post("/parking_access/", response_model=EntryResponseSchema)
+@router.post("/parking_access/", response_model=ParkingEntryResponseSchema)
 async def upload_license_plate(
-    file: UploadFile = File(...), db: AsyncSession = Depends(get_db)
+    file: UploadFile = File(...), db: AsyncSession = Depends(get_db),
 ):
     try:
         # Save file temporarily
@@ -92,9 +93,13 @@ async def upload_license_plate(
             tmp_file_path = tmp_file.name
 
         # Pass the image to your ML model to get the license plate text
-        license_plate_dict = initiate.main(tmp_file_path)
-        license_plate_text = license_plate_dict[0][list(license_plate_dict[0].keys())[0]]['license_plate']['text']
-
+        try:
+            license_plate_dict = initiate.main(tmp_file_path)
+            license_plate_text = license_plate_dict[0][list(license_plate_dict[0].keys())[0]]['license_plate']['text']
+        except Exception as e:
+            response = {'detail':"Could not read the number"}
+            return JSONResponse(content=response)
+            
         # Optionally, store the result in the database if needed
         os.remove(tmp_file_path)
 
@@ -105,7 +110,7 @@ async def upload_license_plate(
         vehicle = vehicle_query.scalars().first()
 
         if not vehicle:
-            raise HTTPException(status_code=404, detail=f"Vehicle with license_plate: {license_plate_text} not found")
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail":f"Vehicle with license_plate: {license_plate_text} not found"})
 
         user = vehicle.user  # Assuming there's a relationship from Vehicle to User via "owner" attribute
 
@@ -116,7 +121,7 @@ async def upload_license_plate(
             detail = "Access GRANTED"            
 
         # Prepare response
-        response = EntryResponseSchema(
+        response = ParkingEntryResponseSchema(
             fullname=user.fullname,
             brand_model=vehicle.brand_model,
             license_plate=vehicle.license_plate,
@@ -125,4 +130,4 @@ async def upload_license_plate(
 
         return JSONResponse(content=response.model_dump())
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred: {str(e)}")

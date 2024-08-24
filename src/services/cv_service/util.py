@@ -160,7 +160,7 @@ def read_license_plate(license_plate_crop):
     aspect_ratio = image_width / image_height
     
     # Classify based on aspect ratio
-    if aspect_ratio < 1.95:  # Arbitrary threshold for rectangular vs square (can adjust)
+    if aspect_ratio < 1.95:
         plate_shape = "square"
     else:
         plate_shape = "rectangular"
@@ -189,7 +189,7 @@ def read_license_plate(license_plate_crop):
     
 
 def write_csv(results, output_path):
-
+    
     with open(output_path, 'w', encoding='utf-16') as f:
         f.write('{},{},{},{},{},{},{}\n'.format('frame_nmr', 'car_id', 'car_bbox',
                                                 'license_plate_bbox', 'license_plate_bbox_score', 'license_number',

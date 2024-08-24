@@ -31,16 +31,17 @@ class UserResponseSchema(BaseModel):
 
 
 class UserCreateSchema(BaseModel):
-    first_name: str = Field(min_length=2, max_length=50)
-    last_name: str = Field(min_length=2, max_length=50)
+    first_name: str = Field( max_length=50)
+    last_name: str = Field( max_length=50)
     email: EmailStr
+    phone: Optional[int] = None
     password: str = Field(..., min_length=8, max_length=12)
     password_confirmation: str = Field(..., min_length=8, max_length=12)
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserUpdateSchema(BaseModel):
-    first_name: Optional[str] = Field(min_length=2, max_length=50)
-    last_name: Optional[str] = Field(min_length=2, max_length=50)
+    name: Optional[str] = Field(min_length=2, max_length=50)
     email: Optional[EmailStr]
 
 
@@ -66,13 +67,9 @@ class RequestNewPassword(BaseModel):
     new_password: str = Field(min_length=8, max_length=12)
 
 
-class EntryResponseSchema(BaseModel):
+class ParkingEntryResponseSchema(BaseModel):
     fullname: str
     brand_model: str
     license_plate: str
     detail: str
-
-    class Config:
-        from_attributes = True
-
-
+    model_config = ConfigDict(from_attributes=True)

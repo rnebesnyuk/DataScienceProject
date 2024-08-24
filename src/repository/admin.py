@@ -1,44 +1,93 @@
-from typing import Optional
-from sqlalchemy import select
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.models.models import ParkingLot, ParkingRate, User, Role
+from sqlalchemy import select, func
+from src.models.models import User, Vehicle, ParkingRecord, ParkingRate
+from fastapi import Depends
+from src.database.db import get_db
+from src.models.models import User, Role
+from src.schemas.user import UserCreateSchema
+from libgravatar import Gravatar
 
-async def change_user_status(user: User, is_active: bool, db: AsyncSession):
-    user.is_active = is_active
-    await db.commit()
-    await db.refresh(user)
 
-async def update_user_role(user: User, role: Role, db: AsyncSession):
-    user.role = role
-    await db.commit()
-    await db.refresh(user)
+async def get_user_by_email(email: str, db: AsyncSession = Depends(get_db)) -> User | None:
+    query = select(User).filter_by(email=email)
+    user = await db.execute(query)
+    return user.scalar_one_or_none()
 
-async def set_parking_rate(rate_per_hour: int, max_daily_rate: Optional[int], currency: str, db: AsyncSession):
-    new_rate = ParkingRate(
-        rate_per_hour=rate_per_hour,
-        max_daily_rate=max_daily_rate,
-        currency=currency
-    )
-    db.add(new_rate)
-    await db.commit()
-    await db.refresh(new_rate)
-    return new_rate
 
-async def update_parking_spaces(total_spaces: int, available_spaces: int, db: AsyncSession):
-    parking_lot = await db.execute(select(ParkingLot).order_by(ParkingLot.created_at.desc()))
-    parking_lot = parking_lot.scalar_one_or_none()
-    if parking_lot:
-        parking_lot.total_spaces = total_spaces
-        parking_lot.available_spaces = available_spaces
-        await db.commit()
-        await db.refresh(parking_lot)
-        return parking_lot
-    else:
-        new_parking_lot = ParkingLot(
-            total_spaces=total_spaces,
-            available_spaces=available_spaces
+# async def update_token(user: User, token: str | None, db: AsyncSession):
+#     user.refresh_token = token
+#     await db.commit()
+
+
+# async def confirmed_email(email: str, db: AsyncSession):
+#     user = await get_user_by_email(email, db)
+#     user.confirmed = True
+#     user.is_active = True
+#     await db.commit()
+
+
+# async def update_password(user: User, new_password: str, db: AsyncSession) -> User:
+#     user.password = new_password
+#     await db.commit()
+#     await db.refresh(user)
+#     return user
+
+
+# class UserRepository:
+#     def __init__(self, db: AsyncSession):
+#         self.db = db
+
+#     async def get_user_by_email(self, email: str):
+#         result = await self.db.execute(select(User).where(User.email == email))
+#         return result.scalar_one_or_none()
+
+#     async def create_user(self, user: User):
+#         self.db.add(user)
+#         await self.db.commit()
+#         await self.db.refresh(user)
+#         return user
+
+
+class VehicleRepository:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def get_vehicle_by_license_plate(self, license_plate: str):
+        result = await self.db.execute(select(Vehicle).where(Vehicle.license_plate == license_plate))
+        return result.scalar_one_or_none()
+
+    async def create_vehicle(self, vehicle: Vehicle):
+        self.db.add(vehicle)
+        await self.db.commit()
+        await self.db.refresh(vehicle)
+        return vehicle
+
+    async def is_vehicle_registered(self, license_plate: str) -> bool:
+        vehicle = await self.get_vehicle_by_license_plate(license_plate)
+        return vehicle is not None
+
+
+class ParkingRecordRepository:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def create_parking_record(self, parking_record: ParkingRecord):
+        self.db.add(parking_record)
+        await self.db.commit()
+        await self.db.refresh(parking_record)
+        return parking_record
+
+    async def get_parking_duration(self, vehicle_id: uuid.UUID) -> int | None:
+        """Повертає тривалість паркування в хвилинах для поточного паркування"""
+        result = await self.db.execute(
+            select(ParkingRecord)
+            .where(ParkingRecord.vehicle_id == vehicle_id)
+            .order_by(ParkingRecord.entry_time.desc())
         )
-        db.add(new_parking_lot)
-        await db.commit()
-        await db.refresh(new_parking_lot)
-        return new_parking_lot
+        parking_record = result.scalar_one_or_none()
+
+        if parking_record and parking_record.exit_time:
+            duration = (parking_record.exit_time - parking_record.entry_time).total_seconds() // 60
+            return int(duration)
+        return None

@@ -68,17 +68,12 @@ def draw_bboxes_from_csv(image_path, csv_path, output_path):
             
             # Draw car bounding box
             cv2.rectangle(image, (car_bbox[0], car_bbox[1]), (car_bbox[2], car_bbox[3]), (255, 0, 0), 3)
-            cv2.putText(image, f'Car ID: {car_id}', (car_bbox[0], car_bbox[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 2)
+            cv2.putText(image, f'Car ID: {car_id[:1]}', (car_bbox[0], car_bbox[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 2)
             
             # Draw license plate bounding box
             cv2.rectangle(image, (lp_bbox[0], lp_bbox[1]), (lp_bbox[2], lp_bbox[3]), (0, 255, 0), 3)
             image = draw_text_with_pil(image, license_number, license_number_score, (lp_bbox[0], lp_bbox[1] - 50))
-            # cv2.putText(image, f'({license_number_score:.2f})', 
-            #             (lp_bbox[0], lp_bbox[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
     
     # Save the image with drawn bounding boxes
     cv2.imwrite(output_path, image)
     print(f"Output saved to {output_path}")
-
-# Example usage
-#draw_bboxes_from_csv('hir.jpg', 'test.csv', 'test_b.jpg')
