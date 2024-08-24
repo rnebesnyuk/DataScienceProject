@@ -1,7 +1,3 @@
-from io import BytesIO
-from skimage import io
-from PIL import Image
-
 from src.services.cv_service.sort.sort import *
 from .lic_rec import *
 from src.services.cv_service.visualize_image import draw_bboxes_from_csv
@@ -21,19 +17,14 @@ def main(input_source):
     if is_video_file(input_source):
         print(f"Detected {input_source} as a video file.")
         s_type = 'vid'
-        results = process_video_or_image(input_source, vehicles, mot_tracker, s_type)
+        results = process_video_or_image(input_source, vehicles, s_type)
         write_csv(results, './reads.csv')
     elif is_image_file(input_source):
         s_type = 'pic'
         print(f"Detected {input_source} as an image file.")
-        results = process_video_or_image(input_source, vehicles, mot_tracker, s_type)
+        results = process_video_or_image(input_source, vehicles, s_type)
         write_csv(results, './reads.csv')
         draw_bboxes_from_csv(input_source, 'reads.csv', 'reads_on_car.jpg')
     else:
         print(f"File format not recognized as video or image.")
     return results
-    
-
-# if __name__ == "__main__":
-#     #input_source = 'hir.jpg'  # Path to video or image file
-#     main(input_source=None)

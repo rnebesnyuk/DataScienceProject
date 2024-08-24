@@ -1,11 +1,9 @@
 from datetime import datetime, timedelta
 from typing import Optional
-
-from fastapi import Request
-
 from jose import jwt, JWTError
-from fastapi import Depends, HTTPException, status
 from passlib.context import CryptContext
+
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +11,7 @@ from src.conf import messages
 from src.conf.config import settings
 from src.database.db import get_db
 from src.repository import users as repository_users
+
 
 class Auth:
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

@@ -3,6 +3,7 @@ import string
 import easyocr
 import cv2 
 import numpy as np
+from matplotlib import pyplot as plt
 
 
 
@@ -89,7 +90,6 @@ def sequence_format(text, aspect_ratio):
             return ''.join(letters_first) + ''.join(digits) + ''.join(letters_last)
 
     # Return the original text if it doesn't match any known pattern
-    
     return text
 
 
@@ -98,15 +98,13 @@ def format_license(text):
     text_ = ''
     mapping = {0: dict_int_to_char, 1: dict_int_to_char,  6: dict_int_to_char, 7: dict_int_to_char,
                 2: dict_char_to_int, 3: dict_char_to_int, 4: dict_char_to_int, 5: dict_char_to_int}
-    #try:
+
     for j in range(len(text[:8])):
         if text[j] in mapping[j].keys():
             text_ += mapping[j][text[j]]
         else:
             text_ += text[j]
     return text_
-    # except:
-    #     return None, None
 
 
 def simple_format(text):
@@ -118,7 +116,6 @@ def simple_format(text):
 def read_license_plate(license_plate_crop):
 
     reader = easyocr.Reader(['en', 'uk'], gpu=False)
-    
 
     detections = reader.readtext(license_plate_crop)
     print(detections)
@@ -163,7 +160,7 @@ def read_license_plate(license_plate_crop):
     aspect_ratio = image_width / image_height
     
     # Classify based on aspect ratio
-    if aspect_ratio < 1.95:  # Arbitrary threshold for rectangular vs square (can adjust)
+    if aspect_ratio < 1.95:
         plate_shape = "square"
     else:
         plate_shape = "rectangular"
@@ -192,7 +189,7 @@ def read_license_plate(license_plate_crop):
     
 
 def write_csv(results, output_path):
-
+    
     with open(output_path, 'w', encoding='utf-16') as f:
         f.write('{},{},{},{},{},{},{}\n'.format('frame_nmr', 'car_id', 'car_bbox',
                                                 'license_plate_bbox', 'license_plate_bbox_score', 'license_number',

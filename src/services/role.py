@@ -4,7 +4,7 @@ from src.models.models import Role, User
 from src.services.auth import auth_service
 
 
-class RoleAccess:
+class RolesAccess:
     def __init__(self, allowed_roles: list[Role]):
         self.allowed_roles = allowed_roles
 
