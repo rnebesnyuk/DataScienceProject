@@ -1,7 +1,9 @@
+import csv
+from datetime import datetime
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from src.models.models import User, Vehicle, ParkingRecord, ParkingRate
+from src.models.models import BlackListCar, User, Vehicle, ParkingRecord, ParkingRate
 from fastapi import Depends
 from src.database.db import get_db
 from src.models.models import User, Role
@@ -91,3 +93,43 @@ class ParkingRecordRepository:
             duration = (parking_record.exit_time - parking_record.entry_time).total_seconds() // 60
             return int(duration)
         return None
+    
+
+    async def generate_parking_report(vehicle_id: uuid.UUID, db: AsyncSession):
+        result = await db.execute(
+            select(ParkingRecord)
+            .where(ParkingRecord.vehicle_id == vehicle_id)
+            .order_by(ParkingRecord.entry_time)
+        )
+        
+        parking_records = result.scalars().all()
+        
+        if not parking_records:
+            return None
+        filename = f"parking_report_{vehicle_id}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+        fields = ['Час в’їзду', 'Час виїзду', 'Тривалість (хв)', 'Вартість (грн)']
+        with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerow(fields)
+            for record in parking_records:
+                csvwriter.writerow([record.entry_time, record.exit_time, record.duration, record.cost])
+        
+        return filename 
+    
+
+  
+
+class BlackListRepository:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def add_to_blacklist(self, license_plate: str):
+        blacklisted_entry = BlackListCar(license_plate=license_plate)
+        self.db.add(blacklisted_entry)
+        await self.db.commit()
+        return blacklisted_entry
+
+    async def is_blacklisted(self, license_plate: str) -> bool:
+        query = select(BlackListCar).where(BlackListCar.license_plate == license_plate)
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none() is not None

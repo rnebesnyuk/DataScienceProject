@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from src.repository import admin as repository_admin
-from src.schemas.admin import ParkingLotUpdate, ParkingRateCreate, UserRoleUpdate, UserStatusUpdate
+from src.schemas.admin import ParkingLotUpdate, ParkingRateCreate, UserRoleUpdate, UserStatusUpdate, VehicleCheckSchema
 from src.schemas.user import UserReadSchema
 from src.models.models import User, Role
 from src.services.role import RolesAccess
@@ -62,13 +62,16 @@ async def set_parking_rate(
     _: User = Depends(auth_service.get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    rate = await repository_admin.set_parking_rate(
-        rate_per_hour=rate_data.rate_per_hour,
-        max_daily_rate=rate_data.max_daily_rate,
-        currency=rate_data.currency,
-        db=db
-    )
-    return rate
+    try:
+        rate = await repository_admin.set_parking_rate(
+            rate_per_hour=rate_data.rate_per_hour,
+            max_daily_rate=rate_data.max_daily_rate,
+            currency=rate_data.currency,
+            db=db
+        )
+        return rate
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.put("/parking-lot", response_model=ParkingLotUpdate, dependencies=[Depends(access_admin)])
@@ -85,3 +88,32 @@ async def update_parking_spaces(
     return parking_lot
 
 
+@router.put("/parking-info", response_model=VehicleCheckSchema, dependencies=[Depends(access_admin)])
+async def update_parking_info(
+    lot_data: VehicleCheckSchema,  
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(auth_service.get_current_user),
+):
+    parking_info = await repository_admin.update_parking_info(
+        total_spaces=lot_data.total_spaces,
+        available_spaces=lot_data.available_spaces,
+        rate_per_hour=lot_data.rate_per_hour,  
+        max_daily_rate=lot_data.max_daily_rate,
+        currency=lot_data.currency,
+        db=db
+    )
+    return parking_info
+
+
+@router.post("/add_to_blacklist", dependencies=[Depends(access_admin)])
+async def add_to_blacklist(
+    license_plate: str,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(auth_service.get_current_user),
+):
+    blacklist_repo = repository_admin.BlackListRepository(db)
+    if await blacklist_repo.is_blacklisted(license_plate):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Vehicle is already blacklisted.")
+    
+    blacklisted_entry = await blacklist_repo.add_to_blacklist(license_plate)
+    return blacklisted_entry
