@@ -57,16 +57,14 @@ async def update_user_role(
 
 
 @router.post("/parking-rates", response_model=ParkingRateCreate, dependencies=[Depends(access_admin)])
-async def set_parking_rate(
+async def create_parking_rate(
     rate_data: ParkingRateCreate,
     _: User = Depends(auth_service.get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     try:
-        rate = await repository_admin.set_parking_rate(
-            rate_per_hour=rate_data.rate_per_hour,
-            max_daily_rate=rate_data.max_daily_rate,
-            currency=rate_data.currency,
+        rate = await repository_admin.save_parking_rate(
+            rate_data=rate_data,
             db=db
         )
         return rate
