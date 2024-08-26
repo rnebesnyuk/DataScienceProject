@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.db import get_db
 from src.models.models import User
 from src.repository import users as repository_users
-from src.schemas.user import UserCreateSchema, TokenSchema, UserResponseSchema, RequestEmail, ConfirmationResponse, \
+from src.schemas.users import UserCreateSchema, TokenSchema, UserResponseSchema, RequestEmail, ConfirmationResponse, \
     LogoutResponseSchema
 from src.services.auth import auth_service
 from src.schemas.auth import LoginSchema, RegisterSchema

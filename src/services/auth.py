@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import jwt, JWTError
 from passlib.context import CryptContext
@@ -28,20 +28,20 @@ class Auth:
     async def create_access_token(self, data: dict, expires_delta: Optional[float] = None):
         to_encode = data.copy()
         if expires_delta:
-            expire = datetime.utcnow() + timedelta(seconds=expires_delta)
+            expire = datetime.now(timezone.utc) + timedelta(seconds=expires_delta)
         else:
-            expire = datetime.utcnow() + timedelta(minutes=15)
-        to_encode.update({"iat": datetime.utcnow(), "exp": expire, "scope": "access_token"})
+            expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+        to_encode.update({"iat": datetime.now(timezone.utc), "exp": expire, "scope": "access_token"})
         encoded_access_token = jwt.encode(to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM)
         return encoded_access_token
 
     async def create_refresh_token(self, data: dict, expires_delta: Optional[float] = None):
         to_encode = data.copy()
         if expires_delta:
-            expire = datetime.utcnow() + timedelta(seconds=expires_delta)
+            expire = datetime.now(timezone.utc) + timedelta(seconds=expires_delta)
         else:
-            expire = datetime.utcnow() + timedelta(days=30)
-        to_encode.update({"iat": datetime.utcnow(), "exp": expire, "scope": "refresh_token"})
+            expire = datetime.now(timezone.utc) + timedelta(days=7)
+        to_encode.update({"iat": datetime.now(timezone.utc), "exp": expire, "scope": "refresh_token"})
         encoded_refresh_token = jwt.encode(to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM)
         return encoded_refresh_token
 
@@ -55,7 +55,7 @@ class Auth:
         except JWTError:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
 
-    async def get_current_user(self, token: str, db: AsyncSession = Depends(get_db)):
+    async def get_current_user(self, token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -86,8 +86,8 @@ class Auth:
 
     async def create_email_token(self, data: dict):
         to_encode = data.copy()
-        expire = datetime.utcnow() + timedelta(days=7)
-        to_encode.update({"iat": datetime.utcnow(), "exp": expire})
+        expire = datetime.now(timezone.utc) + timedelta(days=3)
+        to_encode.update({"iat": datetime.now(timezone.utc), "exp": expire})
         token = jwt.encode(to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM)
         return token
 
@@ -107,7 +107,7 @@ class Auth:
         try:
             payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
             if payload['scope'] == 'access_token':
-                expiration_time = datetime.utcfromtimestamp(payload['exp'])
+                expiration_time = datetime.fromtimestampnow(timezone.utc, payload['exp'])
                 return expiration_time
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid scope for token")
         except JWTError:
