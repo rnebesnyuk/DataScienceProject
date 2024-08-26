@@ -218,3 +218,16 @@ def write_csv(results, output_path):
                                                             results[frame_nmr][car_id]['license_plate']['text_score'])
                             )
         f.close()
+
+
+def sanitize_license_plate(license_plate: str) -> str:
+    # Dictionary mapping Ukrainian characters to English equivalents
+    ukr_to_eng_map = {
+        'А': 'A', 'В': 'B', 'С': 'C', 'Е': 'E', 'Н': 'H', 'І': 'I',
+        'К': 'K', 'М': 'M', 'О': 'O', 'Р': 'P', 'Т': 'T', 'Х': 'X'
+    }
+
+    # Convert each character in the license plate
+    sanitized_plate = ''.join(ukr_to_eng_map.get(char, char) for char in license_plate)
+
+    return sanitized_plate

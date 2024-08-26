@@ -34,9 +34,10 @@ services:
       - ALGORITHM=${ALGORITHM}
     ports:
       - "7385:7385"
+    
     depends_on:
       - postgres
       - redis_server
 
 volumes:
-  postgres_data:
+  postgres_data: 

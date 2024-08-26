@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import String, Integer, BigInteger, ForeignKey, DateTime, func, Column, Boolean, Enum, CheckConstraint, UUID, Text
+from sqlalchemy import String, Integer, BigInteger, ForeignKey, DateTime, func, Column, Boolean, Enum, Float, UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import DeclarativeBase, relationship, Mapped, mapped_column, declarative_base
 
@@ -52,17 +52,12 @@ class Vehicle(Base):
     id = mapped_column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     license_plate = mapped_column(String(20), unique=True, index=True, nullable=False)
     brand_model = mapped_column(String(50), index=True, unique=False, nullable=True)
-    user_id = mapped_column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
+    user_email = mapped_column(String, ForeignKey('users.email'), nullable=False)
     is_blacklisted = mapped_column(Boolean, default=False)
     
     user = relationship("User", back_populates="vehicles")
     parking_records = relationship("ParkingRecord", back_populates="vehicle")
-
-class BlackListCar(Base):
-    __tablename__ = 'black_listcar'
-
-    id = Column(Integer, primary_key=True, index=True)
-    license_plate = Column(String(20), unique=True, index=True, nullable=False)
+    parking_lot = relationship("ParkingLot", back_populates="vehicle", uselist=False)
 
 
 class ParkingRecord(Base):
@@ -70,24 +65,23 @@ class ParkingRecord(Base):
     
     id = mapped_column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     vehicle_id = mapped_column(UUID(as_uuid=True), ForeignKey('vehicles.id'), nullable=False)
-    license_plate = mapped_column(String(20), unique=True, index=True, nullable=False)
+    license_plate = mapped_column(String(20), unique=False, index=True, nullable=False)
     entry_time = mapped_column(DateTime, default=func.now(), nullable=False)
-    exit_time = mapped_column(DateTime, nullable=True)
-    duration = mapped_column(Integer, nullable=True)
-    cost = mapped_column(Integer, nullable=True)
+    exit_time = mapped_column(DateTime, nullable=False)
+    duration = mapped_column(Float, nullable=False)
+    cost = mapped_column(Float, nullable=True)
     
     vehicle = relationship("Vehicle", back_populates="parking_records")
 
 
-class ParkingRate(Base):
+class ParkingRates_Spaces(Base):
     __tablename__ = "parking_rates"
     
-    id = mapped_column(Integer, primary_key=True, index=True)
+    id = mapped_column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     rate_per_hour = mapped_column(Integer, nullable=False)
     max_daily_rate = mapped_column(Integer, nullable=True)
-    currency = mapped_column(String(10), default="USD", nullable=False)
+    currency = mapped_column(String(10), default="UAH", nullable=False)
     total_spaces = mapped_column(Integer, nullable=False, default=100)  
-    available_spaces = mapped_column(Integer, nullable=False, default=100)  
     created_at = mapped_column(DateTime, default=func.now())
     updated_at = mapped_column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -95,8 +89,10 @@ class ParkingRate(Base):
 class ParkingLot(Base):
     __tablename__ = "parking_lot"
     
-    id = mapped_column(Integer, primary_key=True, index=True)
-    total_spaces = mapped_column(Integer, nullable=False, default=100)
-    available_spaces = mapped_column(Integer, nullable=False, default=100)
-    created_at = mapped_column(DateTime, default=func.now())
-    updated_at = mapped_column(DateTime, default=func.now(), onupdate=func.now())
+    id = mapped_column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    vehicle_id = mapped_column(UUID(as_uuid=True), ForeignKey('vehicles.id'), nullable=False)
+    license_plate = mapped_column(String(20), unique=True, index=True, nullable=False)
+    entry_time = mapped_column(DateTime, default=func.now(), nullable=False)
+    is_occupied = mapped_column(Boolean, default=False)
+
+    vehicle = relationship("Vehicle", back_populates="parking_lot")
