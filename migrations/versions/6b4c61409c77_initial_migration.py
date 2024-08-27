@@ -1,8 +1,8 @@
-"""init migration
+"""Initial migration
 
-Revision ID: 21598470024f
+Revision ID: 6b4c61409c77
 Revises: 
-Create Date: 2024-08-24 20:17:53.969538
+Create Date: 2024-08-27 03:48:16.548955
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '21598470024f'
+revision: str = '6b4c61409c77'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -29,29 +29,12 @@ def upgrade() -> None:
     op.create_index(op.f('ix_black_list_email'), 'black_list', ['email'], unique=True)
     op.create_index(op.f('ix_black_list_id'), 'black_list', ['id'], unique=False)
     op.create_index(op.f('ix_black_list_token'), 'black_list', ['token'], unique=True)
-    op.create_table('black_listcar',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('license_plate', sa.String(length=20), nullable=False),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_black_listcar_id'), 'black_listcar', ['id'], unique=False)
-    op.create_index(op.f('ix_black_listcar_license_plate'), 'black_listcar', ['license_plate'], unique=True)
-    op.create_table('parking_lot',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('total_spaces', sa.Integer(), nullable=False),
-    sa.Column('available_spaces', sa.Integer(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_parking_lot_id'), 'parking_lot', ['id'], unique=False)
     op.create_table('parking_rates',
-    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('rate_per_hour', sa.Integer(), nullable=False),
     sa.Column('max_daily_rate', sa.Integer(), nullable=True),
     sa.Column('currency', sa.String(length=10), nullable=False),
     sa.Column('total_spaces', sa.Integer(), nullable=False),
-    sa.Column('available_spaces', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
@@ -62,8 +45,8 @@ def upgrade() -> None:
     sa.Column('first_name', sa.String(length=20), nullable=True),
     sa.Column('last_name', sa.String(length=20), nullable=True),
     sa.Column('email', sa.String(length=30), nullable=False),
-    sa.Column('password', sa.String(length=20), nullable=False),
-    sa.Column('phone', sa.String(length=20), nullable=False),
+    sa.Column('password', sa.String(length=255), nullable=False),
+    sa.Column('phone', sa.BigInteger(), nullable=True),
     sa.Column('role', sa.Enum('admin', 'user', name='role'), nullable=False),
     sa.Column('avatar', sa.String(length=100), nullable=True),
     sa.Column('refresh_token', sa.String(length=255), nullable=True),
@@ -79,32 +62,49 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('license_plate', sa.String(length=20), nullable=False),
     sa.Column('brand_model', sa.String(length=50), nullable=True),
-    sa.Column('user_id', sa.UUID(), nullable=False),
+    sa.Column('user_email', sa.String(), nullable=False),
     sa.Column('is_blacklisted', sa.Boolean(), nullable=True),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['user_email'], ['users.email'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_vehicles_brand_model'), 'vehicles', ['brand_model'], unique=False)
     op.create_index(op.f('ix_vehicles_id'), 'vehicles', ['id'], unique=False)
     op.create_index(op.f('ix_vehicles_license_plate'), 'vehicles', ['license_plate'], unique=True)
+    op.create_table('parking_lot',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('vehicle_id', sa.UUID(), nullable=False),
+    sa.Column('license_plate', sa.String(length=20), nullable=False),
+    sa.Column('entry_time', sa.DateTime(), nullable=False),
+    sa.Column('is_occupied', sa.Boolean(), nullable=True),
+    sa.ForeignKeyConstraint(['vehicle_id'], ['vehicles.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_parking_lot_id'), 'parking_lot', ['id'], unique=False)
+    op.create_index(op.f('ix_parking_lot_license_plate'), 'parking_lot', ['license_plate'], unique=True)
     op.create_table('parking_records',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('vehicle_id', sa.UUID(), nullable=False),
+    sa.Column('license_plate', sa.String(length=20), nullable=False),
     sa.Column('entry_time', sa.DateTime(), nullable=False),
-    sa.Column('exit_time', sa.DateTime(), nullable=True),
-    sa.Column('duration', sa.Integer(), nullable=True),
-    sa.Column('cost', sa.Integer(), nullable=True),
+    sa.Column('exit_time', sa.DateTime(), nullable=False),
+    sa.Column('duration', sa.Float(), nullable=False),
+    sa.Column('cost', sa.Float(), nullable=True),
     sa.ForeignKeyConstraint(['vehicle_id'], ['vehicles.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_parking_records_id'), 'parking_records', ['id'], unique=False)
+    op.create_index(op.f('ix_parking_records_license_plate'), 'parking_records', ['license_plate'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index(op.f('ix_parking_records_license_plate'), table_name='parking_records')
     op.drop_index(op.f('ix_parking_records_id'), table_name='parking_records')
     op.drop_table('parking_records')
+    op.drop_index(op.f('ix_parking_lot_license_plate'), table_name='parking_lot')
+    op.drop_index(op.f('ix_parking_lot_id'), table_name='parking_lot')
+    op.drop_table('parking_lot')
     op.drop_index(op.f('ix_vehicles_license_plate'), table_name='vehicles')
     op.drop_index(op.f('ix_vehicles_id'), table_name='vehicles')
     op.drop_index(op.f('ix_vehicles_brand_model'), table_name='vehicles')
@@ -114,11 +114,6 @@ def downgrade() -> None:
     op.drop_table('users')
     op.drop_index(op.f('ix_parking_rates_id'), table_name='parking_rates')
     op.drop_table('parking_rates')
-    op.drop_index(op.f('ix_parking_lot_id'), table_name='parking_lot')
-    op.drop_table('parking_lot')
-    op.drop_index(op.f('ix_black_listcar_license_plate'), table_name='black_listcar')
-    op.drop_index(op.f('ix_black_listcar_id'), table_name='black_listcar')
-    op.drop_table('black_listcar')
     op.drop_index(op.f('ix_black_list_token'), table_name='black_list')
     op.drop_index(op.f('ix_black_list_id'), table_name='black_list')
     op.drop_index(op.f('ix_black_list_email'), table_name='black_list')
