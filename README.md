@@ -120,9 +120,10 @@ PARKING-MANAGEMENT offers the following key features:
 Once the application is up and running, you can use tools like Postman or cURL to interact with the API at http://localhost:7385/.
 
 1. Register for an initial account to create an administrator for access to administrative features.
-2. Sign up as a user to register a vehicle and use a parking lot.
-3. Ask the admin to add your vehicle to the database. Once the vehicle is added to the database, it can access the parking lot.
-4. Now you can enter or leave the parking lot by reading the image with your car and the license plate number clearly visible.
+2. Admin should set the parking rates (hourly rate, maximum daily rate) and limit available parking spaces.
+3. Sign up as a user to register a vehicle and use a parking lot.
+4. Ask the admin to add your vehicle to the database. Once the vehicle is added to the database, it can access the parking lot.
+5. Now you can enter or leave the parking lot by reading the image with your car and the license plate number clearly visible.
 
 <img src="https://github.com/user-attachments/assets/2f5f1066-ef4a-4b85-9e1c-c44819522ebb" alt="20240818_" width="500" height="375" /><img src="https://github.com/user-attachments/assets/122e53da-8070-4347-a9fb-7a1b94ae1cfb" alt="license_plates_detections_" width="500" height="375" />
 
@@ -131,8 +132,7 @@ Once the application is up and running, you can use tools like Postman or cURL t
 5. Once entered or left the parking lot, the parking time is automatically calculated. Upon leaving, the total duration and cost for the parking is provided.
 6. All parking records are stored in the database and can be accessed by admin, as well as downloaded in .csv for a certain license plate.
 7. All currently parked vehicles can be checked by admin.
-8. Admin can set parking rates (hourly rate, maximum daily rate) and limit available parking spaces. Once the parking limit is reached, vehicles will be denied parking.
-9. Additionally, vehicles can be blacklisted from entering the lot by the Admin.
+8. Additionally, vehicles can be blacklisted from entering the lot by the Admin.
 
 ## License
 
