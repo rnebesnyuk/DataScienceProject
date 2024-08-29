@@ -14,8 +14,8 @@ conf = ConnectionConfig(
     MAIL_FROM=settings.mail_from,
     MAIL_PORT=settings.mail_port,
     MAIL_SERVER=settings.mail_server,
-    MAIL_STARTTLS=True,  # або False, якщо використовуєте SSL
-    MAIL_SSL_TLS=False,  # True, якщо використовуєте SSL
+    MAIL_STARTTLS=True,
+    MAIL_SSL_TLS=False,
     USE_CREDENTIALS=True,
     VALIDATE_CERTS=True,
     TEMPLATE_FOLDER=Path(__file__).parent / 'templates',
@@ -39,6 +39,7 @@ async def send_email(email: EmailStr, username: str, host: str):
 
 
 async def send_email_reset_password(email: EmailStr, username: str, host: str):
+
     try:
         token_verification = await auth_service.create_email_token({"sub": email})
 

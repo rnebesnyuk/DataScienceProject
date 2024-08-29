@@ -22,7 +22,7 @@ class User(Base):
     last_name = Column(String(20))
     email = Column(String(length=30), unique=True, index=True, nullable=False)
     password = Column(String(255), nullable=False)
-    phone = Column(BigInteger, nullable=True)
+    phone = Column(String(20), nullable=True)
     role = Column(Enum(Role), default=Role.user, nullable=False)
     avatar = Column(String(100))
     refresh_token = Column(String(255), nullable=True)

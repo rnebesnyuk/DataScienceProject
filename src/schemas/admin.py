@@ -42,8 +42,8 @@ class ParkingRecordSchema(BaseModel):
     vehicle_id: str
     entry_time: datetime
     exit_time: Optional[datetime]
-    duration: Optional[int]
-    cost: Optional[int]
+    duration: Optional[float]
+    cost: Optional[float]
 
 
 class VehicleCheckSchema(BaseModel):

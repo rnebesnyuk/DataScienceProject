@@ -76,11 +76,12 @@ async def forgot_password(background_tasks: BackgroundTasks,
                         request: Request,
                         body: RequestEmail = Depends(),
                         db: AsyncSession = Depends(get_db)) -> dict:
-    user = await repository_users.get_user_by_email(body.email)
+    user_repo = repository_users.UserRepository(db)
+    user = await user_repo.get_user_by_email(body.email)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     if user:
-        background_tasks.add_task(send_email_reset_password, user.email, user.name, str(request.base_url))
+        background_tasks.add_task(send_email_reset_password, user.email, user.fullname, str(request.base_url))
     return {"message": "Check your email for confirmation."}
 
 
@@ -94,7 +95,9 @@ async def reset_password(token: str,
     if not email:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
 
-    user = await repository_users.get_user_by_email(email)
+
+    user_repo = repository_users.UserRepository(db)
+    user = await user_repo.get_user_by_email(email)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
@@ -138,7 +141,11 @@ async def upload_license_plate(
             return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"detail": str(e)})
 
         if isinstance(parking_record, ParkingRecord):
-            detail = "Parking ended"
+            total_duration = timedelta(minutes=parking_record.duration)
+            hours, remainder = divmod(total_duration.total_seconds(), 3600)
+            minutes = remainder // 60
+            total_parking_duration = f"{int(hours)} hours, {int(minutes)} minutes"
+            detail = f"Parking ended. Duration: {total_parking_duration}, Cost: {parking_record.cost}"
         else:
             detail = "Parking started"
         response = ParkingEntryResponseSchema(

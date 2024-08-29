@@ -3,8 +3,6 @@ import string
 import easyocr
 import cv2 
 import numpy as np
-from matplotlib import pyplot as plt
-
 
 
 # Mapping dictionaries for character conversion
