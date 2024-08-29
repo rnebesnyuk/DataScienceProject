@@ -1,9 +1,10 @@
 [tool.poetry]
-name = "datascienceproject"
+name = "PARKING-MANAGEMENT"
 version = "0.1.0"
 description = ""
 authors = ["Serghii777 <142201494+Serghii777@users.noreply.github.com>"]
 readme = "README.md"
+packages = [{ include = "PARKING-MANAGEMENT" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"

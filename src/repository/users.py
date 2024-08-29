@@ -149,12 +149,18 @@ class ParkingRecordRepository:
         vehicle = await vehicle_repo.get_vehicle_by_license_plate(license_plate)
 
         if not vehicle:
-            raise ValueError("Vehicle not found.")
+            raise ValueError(f"Vehicle with license plate {license_plate} not registered.")
 
         # Check if vehicle is blacklisted
         if vehicle.is_blacklisted:
             raise ValueError(f"Vehicle with license plate {license_plate} is blacklisted. Go find some better place to park.")
 
+        total_spaces, _ = await self.get_parking_space_info()
+        occupied_spaces = await self.count_occupied_spaces()
+
+        if occupied_spaces >= total_spaces:
+            raise ValueError("We're sorry, there are no available parking spaces.")
+        
         # Create a new parking lot entry
         parking_lot = ParkingLot(
             vehicle_id=vehicle.id,
@@ -206,15 +212,41 @@ class ParkingRecordRepository:
         await self.db.commit()
 
         return parking_record
+    
+    async def get_current_parking_rates(self) -> tuple[int, int]:
+        result = await self.db.execute(
+            select(ParkingRates_Spaces)
+            .order_by(ParkingRates_Spaces.created_at.desc())
+            .limit(1)  # Ensure only the latest row is taken
+        )
+        rates = result.scalar_one_or_none()
+        if rates:
+            return rates.rate_per_hour, rates.max_daily_rate
+        raise ValueError("Parking rates not found.")
 
     async def calculate_cost(self, duration: int) -> int:
-        rate_per_hour = 20  # Example hourly rate, this should be configurable
-        max_daily_rate = 100  # Example max daily rate, this should be configurable
-        total_hours = (duration + 59) // 60  
+        rate_per_hour, max_daily_rate = await self.get_current_parking_rates()
+        total_hours = (duration + 59) // 60  # Round up to the next hour
         cost = total_hours * rate_per_hour
         if max_daily_rate is not None:
             cost = min(cost, max_daily_rate)
         return cost
+    
+    async def get_parking_space_info(self) -> tuple[int, int]:
+        result = await self.db.execute(
+            select(ParkingRates_Spaces)
+            .order_by(ParkingRates_Spaces.created_at.desc())
+            .limit(1)
+        )
+        rates = result.scalar_one_or_none()
+        if rates:
+            return rates.total_spaces, rates.max_daily_rate
+        raise ValueError("Parking space information not found.")
+    
+    async def count_occupied_spaces(self) -> int:
+        result = await self.db.execute(select(func.count()).select_from(ParkingLot))
+        count = result.scalar_one_or_none()
+        return count or 0
 
     async def get_parking_history(self, license_plate: str) -> list[dict]:
         vehicle_query = select(Vehicle).where(Vehicle.license_plate == license_plate)

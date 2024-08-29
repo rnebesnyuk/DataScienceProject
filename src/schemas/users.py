@@ -12,6 +12,7 @@ class UserReadSchema(BaseModel):
     first_name: str
     last_name: str
     email: EmailStr
+    phone: Optional[str]
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -19,7 +20,7 @@ class ParkingHistorySchema(BaseModel):
     license_plate: str  
     entry_time: datetime
     exit_time: Optional[datetime]
-    duration: Optional[int]  
+    duration: Optional[float]  
     cost: Optional[float]  
 
     class Config:
@@ -59,7 +60,7 @@ class UserDbSchema(BaseModel):
 
 
 class UserResponseSchema(BaseModel):
-    user: UserDbSchema
+    user: UserReadSchema
     detail: str = "User successfully created."
 
 
@@ -67,7 +68,7 @@ class UserCreateSchema(BaseModel):
     first_name: str = Field( max_length=50)
     last_name: str = Field( max_length=50)
     email: EmailStr
-    phone: Optional[int] = None
+    phone: Optional[str] = None
     password: str = Field(..., min_length=8, max_length=12)
     password_confirmation: str = Field(..., min_length=8, max_length=12)
     model_config = ConfigDict(from_attributes=True)

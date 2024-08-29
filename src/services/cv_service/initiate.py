@@ -11,10 +11,10 @@ from src.utils import utils
 VIDEO_FORMATS = ('.mp4', '.avi', '.mov', '.mkv', '.flv')
 IMAGE_FORMATS = ('.jpg', '.jpeg', '.png', '.bmp', '.tiff')
 
-SAVE_DIR = utils.get_downloads_directory()
+SAVE_DIR = os.path.expanduser("~")
 os.makedirs(SAVE_DIR, exist_ok=True)
 
-output_path = os.path.join(SAVE_DIR, f"license_plates_detections.jpg")
+output_path = os.path.join(SAVE_DIR, f"downloads\license_plates_detections.jpg")
 
 def is_video_file(file_path):
     return file_path.lower().endswith(VIDEO_FORMATS)

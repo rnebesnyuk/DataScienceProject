@@ -48,7 +48,7 @@ async def update_user_role(user: User, role: bool, db: AsyncSession):
 
 
 async def generate_parking_report(license_plate: str, db: AsyncSession):
-    SAVE_DIR = utils.get_downloads_directory()
+    SAVE_DIR = os.path.expanduser("~")
     os.makedirs(SAVE_DIR, exist_ok=True)
 
     # Query to get parking records for the found vehicle
@@ -63,7 +63,7 @@ async def generate_parking_report(license_plate: str, db: AsyncSession):
     if not parking_records:
         return None
 
-    filename = os.path.join(SAVE_DIR, f"parking_report_{license_plate}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv")
+    filename = os.path.join(SAVE_DIR, f"downloads\parking_report_{license_plate}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv")
     fields = ['Entry time', 'Exit time', 'Duration (min)', 'Cost(UAH)']
     with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
         csvwriter = csv.writer(csvfile)
@@ -231,20 +231,3 @@ class ParkingLotRepository:
         await self.db.commit()
         await self.db.refresh(new_rate)
         return new_rate
-    
-    async def update_parking_spaces(self, updated_rate: ParkingRates_Spaces):
-        query = select(ParkingRates_Spaces).where(ParkingRates_Spaces.id == updated_rate.rate_id)
-        result = await self.db.execute(query)
-        parking_rate = result.scalar_one_or_none()
-
-        if parking_rate:
-            parking_rate.rate_per_hour = updated_rate.rate_per_hour
-            parking_rate.max_daily_rate = updated_rate.max_daily_rate
-            parking_rate.currency = updated_rate.currency
-            parking_rate.total_spaces = updated_rate.total_spaces
-            
-            await self.db.commit()
-            await self.db.refresh(parking_rate)
-            return parking_rate
-        
-        return None

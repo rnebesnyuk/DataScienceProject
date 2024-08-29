@@ -20,6 +20,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - ${DB_PORT}:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
 
   app:
     container_name: my_app
@@ -33,11 +38,14 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - ALGORITHM=${ALGORITHM}
     ports:
-      - "7385:7385"
+      - "7385:7385" 
     
     depends_on:
       - postgres
       - redis_server
+
+    restart: always
+
 
 volumes:
   postgres_data: 

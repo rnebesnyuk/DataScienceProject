@@ -52,7 +52,7 @@ async def update_user_role(
 
 @router.post("/add_vehicles", response_model=VehicleCreateSchema, dependencies=[Depends(access_admin)], status_code=status.HTTP_201_CREATED)
 async def add_vehicle(
-    vehicle: VehicleCreateSchema, 
+    vehicle: VehicleCreateSchema = Depends(), 
     db: AsyncSession = Depends(get_db), 
     _: User = Depends(auth_service.get_current_user)
 ):
@@ -63,6 +63,14 @@ async def add_vehicle(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Vehicle with this license plate already exists."
+        )
+    
+    # Check if the user with the provided email exists
+    user = await repository_admin.get_user_by_email(vehicle.user_email, db)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="There is no such user registered."
         )
 
     new_vehicle = Vehicle(
@@ -161,7 +169,7 @@ async def get_parking_records(
 
 @router.post("/parking_rates_spaces", response_model=ParkingRateSpacesDB, dependencies=[Depends(access_admin)])
 async def set_parking_rate_spaces(
-    rate_data: ParkingRateSpacesCreate,
+    rate_data: ParkingRateSpacesCreate = Depends(),
     _: User = Depends(auth_service.get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -178,28 +186,6 @@ async def set_parking_rate_spaces(
     new_rates = await rates_repo.set_parking_rate_spaces(rate)
 
     return new_rates
-
-
-@router.put("/parking_lot_rates_update", response_model=ParkingRateSpacesDB, dependencies=[Depends(access_admin)])
-async def update_parking_spaces(
-    lot_data: ParkingRateSpacesCreate,
-    _: User = Depends(auth_service.get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    rates_repo = repository_admin.ParkingLotRepository(db)
-
-    updated_rate = await rates_repo.update_parking_spaces(
-        lot_data.id,
-        lot_data.rate_per_hour,
-        lot_data.max_daily_rate,
-        lot_data.currency,
-        lot_data.total_spaces
-    )
-
-    if not updated_rate:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parking rate not found.")
-    
-    return updated_rate
 
 
 @router.get("/generate_parking_report", dependencies=[Depends(access_admin)])

@@ -1,21 +1,30 @@
+# Use a smaller base image
+FROM python:3.11-slim
 
-FROM python:3.11
-
-
+# Install necessary system dependencies and Poetry
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get install -y --no-install-recommends \
     libgl1-mesa-glx \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
-RUN pip install poetry
-COPY pyproject.toml poetry.lock /app/
+
+RUN pip install --no-cache-dir poetry
+
+# Set the working directory
 WORKDIR /app
-RUN poetry install --no-dev
 
+# Copy the poetry files first to leverage Docker cache
+COPY pyproject.toml poetry.lock /app/
 
+# Install dependencies
+RUN poetry install --no-dev --no-root
+
+# Copy the application code
 COPY . /app
 
-EXPOSE 7385
+# Copy and make the entrypoint script executable
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
-
-CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7385"]
+# Set the entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]
